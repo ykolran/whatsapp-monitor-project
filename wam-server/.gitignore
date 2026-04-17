@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+
+# Runtime data (auto-created by the server)
+data/
+uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
