@@ -9,10 +9,16 @@ import retrofit2.http.*
 interface ApiService {
 
     @POST("api/messages")
-    suspend fun postMessage(@Body message: Message): Response<SimpleResponse>
+    suspend fun postMessage(@Body message: OutboundMessage): Response<Map<String, Any>>
 
     @GET("api/conversations")
     suspend fun getConversations(): Response<List<Conversation>>
+
+    @POST("api/conversations/{id}/swipe")
+    suspend fun swipeConversation(@Path("id") conversationId: String): Response<SwipeResult>
+
+    @GET("api/messages/{conversationId}")
+    suspend fun getMessages(@Path("conversationId") conversationId: String): Response<List<Message>>
 
     @Multipart
     @POST("api/images")
@@ -29,8 +35,8 @@ interface ApiService {
     suspend fun enrollFace(
         @Part photo: MultipartBody.Part,
         @Part("childName") childName: RequestBody
-    ): Response<SimpleResponse>
+    ): Response<Map<String, Any>>
 
     @GET("api/health")
-    suspend fun healthCheck(): Response<SimpleResponse>
+    suspend fun healthCheck(): Response<Map<String, Any>>
 }

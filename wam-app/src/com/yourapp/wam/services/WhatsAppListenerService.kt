@@ -1,27 +1,18 @@
 package com.ykolran.wam.services
 
 import android.app.Notification
-import android.content.pm.PackageManager
+import android.os.Bundle
+import android.os.Parcelable
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import androidx.core.os.BundleCompat
 import com.ykolran.wam.api.ApiClient
-import com.ykolran.wam.models.Message
+import com.ykolran.wam.models.OutboundMessage
 import kotlinx.coroutines.*
 
 /**
  * Listens to WhatsApp notifications and forwards message content to the local server.
- *
- * SETUP REQUIRED:
- *   1. Add to AndroidManifest.xml:
- *      <service android:name=".services.WhatsAppListenerService"
- *               android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
- *               android:exported="true">
- *          <intent-filter>
- *              <action android:name="android.service.notification.NotificationListenerService"/>
- *          </intent-filter>
- *      </service>
- *   2. User must grant Notification Access in Android Settings > Notifications > Notification Access
  */
 class WhatsAppListenerService : NotificationListenerService() {
 
@@ -49,17 +40,17 @@ class WhatsAppListenerService : NotificationListenerService() {
         if (text.isBlank() || text.startsWith("Tap to") || title == "WhatsApp") return
 
         // Handle bundled messages (several at once)
-        val messages = extras.getParcelableArray(Notification.EXTRA_MESSAGES)
-        val isGroup = sbn.notification.extras.getBoolean("android.isGroupConversation", false)
+        val messages = BundleCompat.getParcelableArray(extras, Notification.EXTRA_MESSAGES, Parcelable::class.java)
+        val isGroup = extras.getBoolean("android.isGroupConversation", false)
 
         val conversationId = makeConvId(sbn.packageName, title)
 
         if (messages != null && messages.isNotEmpty()) {
             // Multiple queued messages - send each one
-            messages.forEach { bundle ->
-                val msgBundle = bundle as? android.os.Bundle ?: return@forEach
+            for (parcelable in messages) {
+                val msgBundle = parcelable as? Bundle ?: continue
                 val sender = msgBundle.getCharSequence("sender")?.toString() ?: title
-                val msgText = msgBundle.getCharSequence("text")?.toString() ?: return@forEach
+                val msgText = msgBundle.getCharSequence("text")?.toString() ?: continue
                 val timestamp = msgBundle.getLong("time", System.currentTimeMillis()) / 1000
                 sendMessage(conversationId, title, sender, msgText, timestamp, isGroup)
             }
@@ -81,7 +72,7 @@ class WhatsAppListenerService : NotificationListenerService() {
     ) {
         scope.launch {
             try {
-                val message = Message(
+                val body = OutboundMessage(
                     conversationId = convId,
                     contactName = contactName,
                     sender = sender,
@@ -89,7 +80,7 @@ class WhatsAppListenerService : NotificationListenerService() {
                     timestamp = timestamp,
                     isGroup = isGroup
                 )
-                val response = ApiClient.api.postMessage(message)
+                val response = ApiClient.api.postMessage(body)
                 if (!response.isSuccessful) {
                     Log.w(TAG, "Server returned ${response.code()} for message from $contactName")
                 }
