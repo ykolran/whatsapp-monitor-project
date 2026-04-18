@@ -1,3 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">WhatsApp Monitor</string>
+
+    <!-- Conversations screen -->
+    <string name="no_summary_yet">Waiting for summary…</string>
+    <string name="swipe_archive_label">Archive</string>
+    <string name="conversation_archived">Conversation archived ✓</string>
+    <string name="swipe_failed">Failed to archive — please try again</string>
+    <string name="new_messages_badge">%d new</string>
+
+    <!-- Notifications -->
+    <string name="notification_access_required">Notification access is required to capture WhatsApp messages</string>
+    <string name="action_enable">Enable</string>
+
+    <!-- Server / connectivity -->
+    <string name="cannot_connect_server">Cannot reach server. Check Settings.</string>
+    <string name="server_error">Server returned error %d</string>
+    <string name="server_url_hint">http://192.168.x.x:3000</string>
+    <string name="auth_token_hint">Your personal API token</string>
+    <string name="settings_saved">Settings saved</string>
+    <string name="server_reachable">✓ Server reachable!</string>
+    <string name="server_unreachable">Cannot reach server: %s</string>
+
+    <!-- Menu -->
+    <string name="menu_settings">Settings</string>
+    <string name="menu_enroll_face">Enroll Child\'s Face</string>
+    <string name="menu_children_photos">Children\'s Photos</string>
+
+    <!-- Face enrollment -->
+    <string name="enroll_title">Enroll Child\'s Face</string>
+    <string name="child_name_hint">Child\'s name</string>
+    <string name="btn_take_photo">Take Photo</string>
+    <string name="btn_enroll">Enroll Face</string>
+    <string name="enrolled_success">Face enrolled for %s ✓</string>
+    <string name="enroll_error">Enrollment failed: %s</string>
+
+    <!-- Children photos -->
+    <string name="children_photos_title">Children\'s Photos</string>
+    <string name="no_photos_found">No photos with your children found yet.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Server Settings</string>
+    <string name="label_server_url">Server URL</string>
+    <string name="label_auth_token">Auth Token</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_test_connection">Test Connection</string>
 </resources>

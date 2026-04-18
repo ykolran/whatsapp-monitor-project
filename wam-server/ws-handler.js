@@ -1,8 +1,10 @@
-const clients = new Set();
+// Per-user WebSocket client registry
+const clients = new Map(); // userId -> Set<WebSocket>
 
-function handleWebSocket(ws) {
-  clients.add(ws);
-  console.log(`[WS] Client connected. Total: ${clients.size}`);
+function handleWebSocket(ws, userId) {
+  if (!clients.has(userId)) clients.set(userId, new Set());
+  clients.get(userId).add(ws);
+  console.log(`[WS] User ${userId} connected (${clients.get(userId).size} sessions)`);
 
   ws.on('message', (data) => {
     try {
@@ -16,26 +18,26 @@ function handleWebSocket(ws) {
   });
 
   ws.on('close', () => {
-    clients.delete(ws);
-    console.log(`[WS] Client disconnected. Total: ${clients.size}`);
+    clients.get(userId)?.delete(ws);
+    console.log(`[WS] User ${userId} disconnected`);
   });
 
   ws.on('error', (err) => {
     console.error('[WS] Error:', err.message);
-    clients.delete(ws);
+    clients.get(userId)?.delete(ws);
   });
 
   ws.send(JSON.stringify({ type: 'connected', timestamp: Date.now() }));
 }
 
-function broadcast(payload) {
+function broadcastToUser(userId, payload) {
+  const userSessions = clients.get(userId);
+  if (!userSessions?.size) return;
   const data = JSON.stringify(payload);
-  let count = 0;
-  clients.forEach((ws) => {
-    if (ws.readyState === 1) { ws.send(data); count++; }
-    else clients.delete(ws);
+  userSessions.forEach((ws) => {
+    if (ws.readyState === 1) ws.send(data);
+    else userSessions.delete(ws);
   });
-  if (count > 0) console.log(`[WS] Broadcast '${payload.type}' to ${count} client(s)`);
 }
 
-module.exports = { handleWebSocket, broadcast };
+module.exports = { handleWebSocket, broadcastToUser };

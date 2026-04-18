@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="swipe_icon_margin">24dp</dimen>
+    <dimen name="swipe_label_size">14sp</dimen>
+    <dimen name="card_corner_radius">12dp</dimen>
+    <dimen name="card_elevation">2dp</dimen>
+    <dimen name="card_margin">8dp</dimen>
+    <dimen name="content_padding">16dp</dimen>
+    <dimen name="badge_size">20dp</dimen>
+    <dimen name="sentiment_icon_size">20dp</dimen>
+</resources>

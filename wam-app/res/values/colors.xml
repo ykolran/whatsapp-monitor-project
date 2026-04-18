@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary brand (teal) -->
+    <color name="colorPrimary">#01696F</color>
+    <color name="colorPrimaryDark">#0C4E54</color>
+    <color name="colorAccent">#4F98A3</color>
+
+    <!-- Surfaces -->
+    <color name="colorBackground">#F7F6F2</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorSurfaceOffset">#F3F0EC</color>
+    <color name="colorDivider">#DCD9D5</color>
+
+    <!-- Text -->
+    <color name="colorTextPrimary">#28251D</color>
+    <color name="colorTextMuted">#7A7974</color>
+    <color name="colorTextFaint">#BAB9B4</color>
+    <color name="colorTextOnPrimary">#FFFFFF</color>
+
+    <!-- Sentiment indicators -->
+    <color name="sentimentPositive">#437A22</color>
+    <color name="sentimentNegative">#A12C7B</color>
+    <color name="sentimentUrgent">#A13544</color>
+    <color name="sentimentNeutral">#7A7974</color>
+    <color name="sentimentFriendly">#006494</color>
+
+    <!-- Swipe action -->
+    <color name="swipe_archive">#01696F</color>
+
+    <!-- Badge -->
+    <color name="colorBadge">#A13544</color>
+    <color name="colorBadgeText">#FFFFFF</color>
+</resources>

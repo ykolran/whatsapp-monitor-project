@@ -1,7 +1,7 @@
 {
   "name": "whatsapp-mirror-server",
-  "version": "1.0.0",
-  "description": "Local server for WhatsApp message mirroring, LLM summaries, and face recognition",
+  "version": "2.0.0",
+  "description": "Local WhatsApp mirror server — multi-user, LLM summaries, face recognition",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -80,7 +80,7 @@ object ApiClient {
                 try {
                     val map = gson.fromJson(text, Map::class.java)
                     when (map["type"]) {
-                        "ping"               -> ws.send("{\"type\":\"pong\"}")
+                        "ping"               -> webSocket.send("{\"type\":\"pong\"}")
                         "summary_updated",
                         "conversation_swiped" -> {
                             val update = gson.fromJson(text, SummaryUpdate::class.java)
