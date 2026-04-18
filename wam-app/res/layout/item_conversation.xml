@@ -49,7 +49,7 @@
             android:id="@+id/tvSummary"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textColor="@color/colorTextMuted"
+            android:textColor="@color/colorTextSecondary"
             android:textSize="14sp"
             android:ellipsize="end"
             android:maxLines="2"
