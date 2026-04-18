@@ -1,33 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary brand (teal) -->
-    <color name="colorPrimary">#01696F</color>
-    <color name="colorPrimaryDark">#0C4E54</color>
-    <color name="colorAccent">#4F98A3</color>
+    <!-- Primary: WhatsApp-style Teal -->
+    <color name="colorPrimary">#075E54</color>
+    <color name="colorPrimaryDark">#054D44</color>
+    <color name="colorAccent">#25D366</color>
 
     <!-- Surfaces -->
-    <color name="colorBackground">#F7F6F2</color>
+    <color name="colorBackground">#F0F2F5</color>
     <color name="colorSurface">#FFFFFF</color>
-    <color name="colorSurfaceOffset">#F3F0EC</color>
-    <color name="colorDivider">#DCD9D5</color>
+    <color name="colorDivider">#E9EDEF</color>
 
-    <!-- Text -->
-    <color name="colorTextPrimary">#28251D</color>
-    <color name="colorTextMuted">#7A7974</color>
-    <color name="colorTextFaint">#BAB9B4</color>
+    <!-- Text: High Contrast -->
+    <color name="colorTextPrimary">#111B21</color>
+    <color name="colorTextSecondary">#667781</color>
     <color name="colorTextOnPrimary">#FFFFFF</color>
 
-    <!-- Sentiment indicators -->
-    <color name="sentimentPositive">#437A22</color>
-    <color name="sentimentNegative">#A12C7B</color>
-    <color name="sentimentUrgent">#A13544</color>
-    <color name="sentimentNeutral">#7A7974</color>
-    <color name="sentimentFriendly">#006494</color>
+    <!-- Sentiment Colors -->
+    <color name="sentimentPositive">#00A884</color>
+    <color name="sentimentNegative">#F15C6D</color>
+    <color name="sentimentUrgent">#D91E1E</color>
+    <color name="sentimentNeutral">#8696A0</color>
+    <color name="sentimentFriendly">#34B7F1</color>
 
-    <!-- Swipe action -->
-    <color name="swipe_archive">#01696F</color>
-
-    <!-- Badge -->
-    <color name="colorBadge">#A13544</color>
+    <!-- UI Elements -->
+    <color name="swipe_archive">#075E54</color>
+    <color name="colorBadge">#25D366</color>
     <color name="colorBadgeText">#FFFFFF</color>
 </resources>
