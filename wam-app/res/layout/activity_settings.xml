@@ -62,14 +62,6 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSaveSettings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/btn_save"
-                android:layout_marginBottom="12dp"
-                style="@style/Widget.MaterialComponents.Button"/>
-
-            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTestConnection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
