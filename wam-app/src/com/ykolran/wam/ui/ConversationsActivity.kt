@@ -127,22 +127,17 @@ class ConversationsActivity : AppCompatActivity() {
                     val result = response.body()
                     Snackbar.make(recyclerView,
                         getString(R.string.conversation_archived), Snackbar.LENGTH_SHORT).show()
-                    // Update summary in place with result from server
-                    result?.summary?.let { summary ->
-                        conversations[position] = conversations[position].copy(
-                            summary = summary,
-                            sentiment = result.sentiment,
-                            newMessageCount = 0
-                        )
-                        adapter.notifyItemChanged(position)
-                    }
+                    // Item is already removed — nothing more to do visually.
+                    // Optionally re-insert at top with updated summary if you want it to stay visible:
+                    // result?.summary?.let { ... }
                 } else {
-                    adapter.notifyItemChanged(position) // restore item
+                    // Restore the item since the server rejected the swipe
+                    adapter.restoreItem(conversation, position)
                     Toast.makeText(this@ConversationsActivity,
                         getString(R.string.swipe_failed), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                adapter.notifyItemChanged(position)
+                adapter.restoreItem(conversation, position)
                 Toast.makeText(this@ConversationsActivity, e.message, Toast.LENGTH_SHORT).show()
             }
         }
