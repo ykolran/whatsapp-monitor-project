@@ -24,7 +24,7 @@ class SettingsActivity : AppCompatActivity() {
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener { onBackPressed() }
+        toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
         val prefs  = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val etUrl   = findViewById<TextInputEditText>(R.id.etServerUrl)
