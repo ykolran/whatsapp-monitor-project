@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
 import com.ykolran.wam.R
 import com.ykolran.wam.adapters.ConversationAdapter
@@ -22,6 +23,7 @@ import kotlinx.coroutines.*
 class ConversationsActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
+    private lateinit var swipeRefresh: SwipeRefreshLayout   // ADD THIS
     private lateinit var adapter: ConversationAdapter
     private val conversations = mutableListOf<Conversation>()
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -33,6 +35,13 @@ class ConversationsActivity : AppCompatActivity() {
 
         NotificationHelper.createChannel(this)
         ApiClient.loadFromPrefs(this)
+ 
+        swipeRefresh = findViewById(R.id.swipeRefresh)      
+        swipeRefresh.setColorSchemeColors(                   
+            getColor(R.color.colorPrimary)
+        )
+        swipeRefresh.setOnRefreshListener { loadConversations() }  
+
 
         recyclerView = findViewById(R.id.recyclerConversations)
         adapter = ConversationAdapter(conversations, ::onConversationSwiped)
@@ -75,6 +84,8 @@ class ConversationsActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Toast.makeText(this@ConversationsActivity,
                     getString(R.string.cannot_connect_server), Toast.LENGTH_LONG).show()
+            } finally {
+                swipeRefresh.isRefreshing = false   // ADD THIS — always stop the spinner
             }
         }
     }
@@ -149,9 +160,9 @@ class ConversationsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        loadConversations() // refresh when returning from settings
+        loadConversations()
     }
-
+    
     override fun onDestroy() {
         scope.cancel()
         ApiClient.disconnectWebSocket()
