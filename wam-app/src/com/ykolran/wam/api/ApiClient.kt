@@ -24,7 +24,6 @@ object ApiClient {
     private val _summaryUpdates = MutableSharedFlow<SummaryUpdate>(extraBufferCapacity = 100)
     val summaryUpdates: SharedFlow<SummaryUpdate> = _summaryUpdates
 
-    // Rebuild Retrofit whenever settings change
     private var _api: ApiService? = null
     val api: ApiService
         get() = _api ?: buildApi().also { _api = it }
@@ -55,7 +54,7 @@ object ApiClient {
     fun configure(url: String, token: String) {
         serverUrl = url
         authToken = token
-        _api = null // force rebuild on next access
+        _api = null
     }
 
     fun loadFromPrefs(context: Context) {
@@ -80,20 +79,40 @@ object ApiClient {
                 try {
                     val map = gson.fromJson(text, Map::class.java)
                     when (map["type"]) {
-                        "ping"               -> webSocket.send("{\"type\":\"pong\"}")
-                        "summary_updated",
-                        "conversation_swiped" -> {
+                        "ping" ->
+                            webSocket.send("{\"type\":\"pong\"}")
+
+                        "summary_updated" -> {
                             val update = gson.fromJson(text, SummaryUpdate::class.java)
                             _summaryUpdates.tryEmit(update)
                         }
+
+                        "conversation_archived" -> {
+                            // Only conversationId is needed — emit with empty strings for other fields
+                            val conversationId = map["conversationId"] as? String ?: return
+                            _summaryUpdates.tryEmit(
+                                SummaryUpdate(
+                                    type           = "conversation_archived",
+                                    conversationId = conversationId,
+                                    remoteId       = map["remoteId"] as? String ?: "",
+                                    contactName    = "",
+                                    summary        = "",
+                                    sentiment      = "",
+                                    timestamp      = System.currentTimeMillis()
+                                )
+                            )
+                        }
                     }
-                } catch (e: Exception) { Log.e(TAG, "WS parse error: ${e.message}") }
+                } catch (e: Exception) {
+                    Log.e(TAG, "WS parse error: ${e.message}")
+                }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.e(TAG, "WS failure: ${t.message}")
                 scheduleReconnect()
             }
+
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 Log.i(TAG, "WS closed: $reason")
             }
