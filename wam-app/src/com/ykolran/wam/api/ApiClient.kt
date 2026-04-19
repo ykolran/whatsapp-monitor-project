@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
     private const val TAG = "ApiClient"
 
-    private var serverUrl: String = "http://192.168.1.100:3000/"
+    private var serverUrl: String = "https://192.168.1.100:3000/"
     private var authToken: String = ""
 
     private val gson = Gson()
@@ -61,7 +61,7 @@ object ApiClient {
     fun loadFromPrefs(context: Context) {
         val prefs = context.getSharedPreferences("wamirror", Context.MODE_PRIVATE)
         configure(
-            prefs.getString("server_url", "http://192.168.1.100:3000") ?: "http://192.168.1.100:3000",
+            prefs.getString("server_url", "https://192.168.1.100:3000") ?: "https://192.168.1.100:3000",
             prefs.getString("auth_token", "") ?: ""
         )
     }

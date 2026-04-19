@@ -56,7 +56,7 @@ if ($ServerUrl -eq "") {
         $inputUrl = Read-Host "  Server URL [$defaultUrl]"
         $ServerUrl = if ($inputUrl -eq "") { $defaultUrl } else { $inputUrl }
     } else {
-        $ServerUrl = Read-Host "  Server URL (e.g. http://192.168.1.100:3000)"
+        $ServerUrl = Read-Host "  Server URL (e.g. https://192.168.1.100:3000)"
     }
 }
 $ServerUrl = $ServerUrl.TrimEnd("/")
