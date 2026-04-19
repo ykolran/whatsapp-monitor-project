@@ -33,7 +33,10 @@ router.post('/', upload.single('image'), async (req, res) => {
   const thumbPath = path.join(uploadsDir, thumbFilename);
   await sharp(req.file.path).resize(200, 200, { fit: 'cover' }).toFile(thumbPath);
 
-  const faceResult = await recognizeFaces(req.file.path);
+  // ── FIX: use per-user face DB ──────────────────────────────────────
+  const userDbPath = path.join(__dirname, '..', 'data', `face_db_${req.user.id}.json`);
+  const faceResult = await recognizeFaces(req.file.path, userDbPath);
+  // ──────────────────────────────────────────────────────────────────
 
   const imageId = uuidv4();
   db.prepare(`
