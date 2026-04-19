@@ -16,7 +16,7 @@
     <!-- Server / connectivity -->
     <string name="cannot_connect_server">Cannot reach server. Check Settings.</string>
     <string name="server_error">Server returned error %d</string>
-    <string name="server_url_hint">http://192.168.x.x:3000</string>
+    <string name="server_url_hint">https://192.168.x.x:3000</string>
     <string name="auth_token_hint">Your personal API token</string>
     <string name="settings_saved">Settings saved</string>
     <string name="server_reachable">✓ Server reachable!</string>

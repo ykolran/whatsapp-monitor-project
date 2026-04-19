@@ -32,7 +32,7 @@ class SettingsActivity : AppCompatActivity() {
         val btnTest = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnTestConnection)
 
         // Load saved values
-        etUrl.setText(prefs.getString("server_url", "http://192.168.1.100:3000"))
+        etUrl.setText(prefs.getString("server_url", "https://192.168.1.100:3000"))
         etToken.setText(prefs.getString("auth_token", ""))
 
         // Auto-save on every change — no Save button needed
