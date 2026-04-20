@@ -1,13 +1,84 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../db');
+const db      = require('../db');
 const { summarizeConversation } = require('../services/llm');
 const { sanitizeMessagePayload } = require('../utils/sanitize');
 
 const router = express.Router();
 
+// Per-conversation debounce timers: conversationId -> setTimeout handle
+const summaryTimers = new Map();
+const DEBOUNCE_MS   = 3000; // wait 3 s after last message before calling LLM
+
+/**
+ * Schedule (or reschedule) an LLM summary for a conversation.
+ * Any message arriving within DEBOUNCE_MS of the previous one resets the timer,
+ * so only ONE summary is generated per burst of messages.
+ */
+function scheduleSummary(convId, contactName, userId, broadcastFn) {
+  // Cancel any pending timer for this conversation
+  if (summaryTimers.has(convId)) {
+    clearTimeout(summaryTimers.get(convId));
+  }
+
+  const handle = setTimeout(async () => {
+    summaryTimers.delete(convId);
+    try {
+      // Read ALL non-history messages accumulated so far
+      const newMessages = db.prepare(`
+        SELECT sender, text, timestamp FROM messages
+        WHERE conversation_id = ? AND is_history = 0
+        ORDER BY timestamp ASC LIMIT 30
+      `).all(convId);
+
+      if (!newMessages.length) return;
+
+      // Use the most recent history summary as context
+      const historyRow = db.prepare(`
+        SELECT text FROM summaries
+        WHERE conversation_id = ? AND is_history = 1
+        ORDER BY created_at DESC LIMIT 1
+      `).get(convId);
+
+      const result = await summarizeConversation(
+        contactName, newMessages, historyRow?.text || null
+      );
+
+      // Replace the single live summary for this conversation
+      db.prepare(
+        'DELETE FROM summaries WHERE conversation_id = ? AND is_history = 0'
+      ).run(convId);
+
+      const summaryId = uuidv4();
+      db.prepare(`
+        INSERT INTO summaries (id, conversation_id, user_id, text, sentiment, is_history)
+        VALUES (?, ?, ?, ?, ?, 0)
+      `).run(summaryId, convId, userId, result.summary, result.sentiment);
+
+      // Fetch remoteId for the broadcast
+      const conv = db.prepare('SELECT remote_id FROM conversations WHERE id = ?').get(convId);
+
+      broadcastFn(userId, {
+        type:           'summary_updated',
+        conversationId: convId,
+        remoteId:       conv?.remote_id ?? '',
+        contactName:    contactName,
+        summary:        result.summary,
+        sentiment:      result.sentiment,
+        timestamp:      Date.now(),
+      });
+
+      console.log(`[Messages] Summary updated for "${contactName}" (${newMessages.length} msgs)`);
+    } catch (err) {
+      console.error('[Messages] Summary failed:', err.message);
+    }
+  }, DEBOUNCE_MS);
+
+  summaryTimers.set(convId, handle);
+}
+
 // POST /api/messages — ingest a message from the Android app
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
   const payload = sanitizeMessagePayload(req.body);
 
   if (!payload.conversationId || !payload.text) {
@@ -33,9 +104,10 @@ router.post('/', async (req, res) => {
         contact_name = ?, message_count = message_count + 1, updated_at = unixepoch()
       WHERE id = ?
     `).run(payload.contactName || conv.contact_name, conv.id);
+    conv = db.prepare('SELECT * FROM conversations WHERE id = ?').get(conv.id);
   }
 
-  // Insert message
+  // Insert message synchronously — respond immediately
   const msgId = uuidv4();
   db.prepare(`
     INSERT INTO messages (id, conversation_id, user_id, sender, text, timestamp)
@@ -44,53 +116,12 @@ router.post('/', async (req, res) => {
          payload.sender || payload.contactName || 'Unknown',
          payload.text, payload.timestamp);
 
+  // Respond before LLM runs
   res.json({ success: true, messageId: msgId, conversationId: conv.id });
 
-  // Async LLM summary — with history context, only new messages
-  setImmediate(async () => {
-    try {
-      const newMessages = db.prepare(`
-        SELECT sender, text, timestamp FROM messages
-        WHERE conversation_id = ? AND is_history = 0
-        ORDER BY timestamp ASC LIMIT 30
-      `).all(conv.id);
-
-      const historyRow = db.prepare(`
-        SELECT text FROM summaries
-        WHERE conversation_id = ? AND is_history = 1
-        ORDER BY created_at DESC LIMIT 1
-      `).get(conv.id);
-
-      const result = await summarizeConversation(
-        payload.contactName, newMessages, historyRow?.text || null
-      );
-
-      // Store as non-history live summary (is_history = 0) — replaced on each new message
-      // First delete existing live summary for this conversation
-      db.prepare(
-        'DELETE FROM summaries WHERE conversation_id = ? AND is_history = 0'
-      ).run(conv.id);
-
-      const summaryId = uuidv4();
-      db.prepare(`
-        INSERT INTO summaries (id, conversation_id, user_id, text, sentiment, is_history)
-        VALUES (?, ?, ?, ?, ?, 0)
-      `).run(summaryId, conv.id, req.user.id, result.summary, result.sentiment);
-
-      const broadcastToUser = req.app.get('broadcastToUser');
-      broadcastToUser(req.user.id, {
-        type: 'summary_updated',
-        conversationId: conv.id,
-        remoteId: conv.remote_id,
-        contactName: payload.contactName,
-        summary: result.summary,
-        sentiment: result.sentiment,
-        timestamp: Date.now(),
-      });
-    } catch (err) {
-      console.error('[Messages] Summary failed:', err.message);
-    }
-  });
+  // Debounced summary — resets timer on every new message in the same conversation
+  const broadcastToUser = req.app.get('broadcastToUser');
+  scheduleSummary(conv.id, payload.contactName || conv.contact_name, req.user.id, broadcastToUser);
 });
 
 // GET /api/messages/:conversationId — message history scoped to user

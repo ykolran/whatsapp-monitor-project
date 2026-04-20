@@ -44,6 +44,8 @@ Respond with a JSON object only — no markdown, no explanation:
     return validateLLMResponse(raw); // throws if invalid — caught below
   } catch (err) {
     console.error('[LLM] Error:', err.message);
+    console.error('Prompt was:', prompt);
+    console.error('Raw response was:', err.response?.data || 'N/A');
     return { summary: 'Summary unavailable.', sentiment: 'neutral' };
   }
 }
