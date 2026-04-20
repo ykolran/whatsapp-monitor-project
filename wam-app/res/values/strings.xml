@@ -34,6 +34,15 @@
     <string name="btn_enroll">Enroll Face</string>
     <string name="enrolled_success">Face enrolled for %s ✓</string>
     <string name="enroll_error">Enrollment failed: %s</string>
+    <string name="btn_camera">Camera</string>
+    <string name="btn_gallery">Gallery</string>
+    <string name="btn_delete">Delete</string>
+    <string name="enrolling">Enrolling face…</string>
+    <string name="enrolled_children">Enrolled children</string>
+    <string name="camera_permission_denied">Camera permission is required to take photos</string>
+    <string name="delete_child_title">Remove %s?</string>
+    <string name="delete_child_message">All enrolled face samples for this child will be deleted. Photos already matched will not be affected.</string>
+    <string name="child_deleted">%s removed</string>
 
     <!-- Children photos -->
     <string name="children_photos_title">Children\'s Photos</string>
@@ -45,4 +54,10 @@
     <string name="label_auth_token">Auth Token</string>
     <string name="btn_save">Save</string>
     <string name="btn_test_connection">Test Connection</string>
+
+    <plurals name="sample_count">
+        <item quantity="one">%d photo enrolled</item>
+        <item quantity="other">%d photos enrolled</item>
+    </plurals>
+
 </resources>

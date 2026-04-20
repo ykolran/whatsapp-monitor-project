@@ -37,6 +37,14 @@ interface ApiService {
         @Part("childName") childName: RequestBody
     ): Response<Map<String, Any>>
 
+    // NEW: list enrolled children (name + sample count)
+    @GET("api/faces")
+    suspend fun getEnrolledFaces(): Response<List<Map<String, Any>>>
+
+    // NEW: delete all enrolled faces for a child by name
+    @DELETE("api/faces/{childName}")
+    suspend fun deleteEnrolledFace(@Path("childName") childName: String): Response<Map<String, Any>>
+
     @GET("api/health")
     suspend fun healthCheck(): Response<Map<String, Any>>
 }
