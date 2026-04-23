@@ -90,6 +90,18 @@ router.post('/', (req, res) => {
     'SELECT * FROM conversations WHERE user_id = ? AND remote_id = ?'
   ).get(req.user.id, payload.conversationId);
 
+  // Check for duplicate message (same sender, timestamp, and conversation)
+  const sender = payload.sender || payload.contactName || 'Unknown';
+  const existingMsg = db.prepare(`
+    SELECT id FROM messages
+    WHERE conversation_id = ? AND sender = ? AND timestamp = ?
+  `).get(conv.id, sender, payload.timestamp);
+
+  if (existingMsg) {
+    // Duplicate found, skip insertion
+    return res.json({ success: true, messageId: existingMsg.id, conversationId: conv.id, isDuplicate: true });
+  }
+
   if (!conv) {
     const convId = uuidv4();
     db.prepare(`
@@ -112,9 +124,7 @@ router.post('/', (req, res) => {
   db.prepare(`
     INSERT INTO messages (id, conversation_id, user_id, sender, text, timestamp)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(msgId, conv.id, req.user.id,
-         payload.sender || payload.contactName || 'Unknown',
-         payload.text, payload.timestamp);
+  `).run(msgId, conv.id, req.user.id, sender, payload.text, payload.timestamp);
 
   // Respond before LLM runs
   res.json({ success: true, messageId: msgId, conversationId: conv.id });

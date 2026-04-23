@@ -3,6 +3,7 @@ node_modules/
 
 # Environment & secrets
 .env
+.venv
 
 # Runtime data (auto-created by the server)
 data/
