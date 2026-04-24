@@ -28,9 +28,6 @@
 
         <!-- Fix for text visibility in Material components -->
         <item name="hintTextColor">@color/colorTextSecondary</item>
-        <!-- ✅ Add this — tells the window to lay out content BELOW the status bar -->
-        <item name="android:windowTranslucentStatus">false</item>
-        <item name="android:fitsSystemWindows">true</item>
     </style>
 
     <style name="Theme.WAMirror.AppBarOverlay" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar" />
