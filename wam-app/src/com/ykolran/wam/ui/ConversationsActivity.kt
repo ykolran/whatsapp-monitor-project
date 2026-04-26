@@ -7,11 +7,14 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
 import com.ykolran.wam.R
+import com.ykolran.wam.databinding.ActivityConversationsBinding
 import com.ykolran.wam.adapters.ConversationAdapter
 import com.ykolran.wam.api.ApiClient
 import com.ykolran.wam.models.Conversation
@@ -21,32 +24,30 @@ import kotlinx.coroutines.*
 
 class ConversationsActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var swipeRefresh: SwipeRefreshLayout
+    private lateinit var binding: ActivityConversationsBinding
     private lateinit var adapter: ConversationAdapter
     private val conversations = mutableListOf<Conversation>()
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_conversations)
-        setSupportActionBar(findViewById(R.id.toolbar))
+        binding = ActivityConversationsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
 
         NotificationHelper.createChannel(this)
         ApiClient.loadFromPrefs(this)
 
-        swipeRefresh = findViewById(R.id.swipeRefresh)
-        swipeRefresh.setColorSchemeColors(getColor(R.color.colorPrimary))
-        swipeRefresh.setOnRefreshListener { loadConversations() }
+        binding.swipeRefresh.setColorSchemeColors(getColor(R.color.colorPrimary))
+        binding.swipeRefresh.setOnRefreshListener { loadConversations() }
 
-        recyclerView = findViewById(R.id.recyclerConversations)
         adapter = ConversationAdapter(conversations, ::onConversationSwiped)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
-        adapter.attachSwipeHelper(recyclerView)
+        binding.recyclerConversations.layoutManager = LinearLayoutManager(this)
+        binding.recyclerConversations.adapter = adapter
+        adapter.attachSwipeHelper(binding.recyclerConversations)
 
         if (!isNotificationServiceEnabled()) {
-            Snackbar.make(recyclerView, R.string.notification_access_required, Snackbar.LENGTH_LONG)
+            Snackbar.make(binding.recyclerConversations, R.string.notification_access_required, Snackbar.LENGTH_LONG)
                 .setAction(R.string.action_enable) {
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                 }.show()
@@ -82,7 +83,7 @@ class ConversationsActivity : AppCompatActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             } finally {
-                swipeRefresh.isRefreshing = false
+                binding.swipeRefresh.isRefreshing = false
             }
         }
     }
@@ -156,7 +157,7 @@ class ConversationsActivity : AppCompatActivity() {
 
     private fun highlightConversation(conversationId: String) {
         val idx = conversations.indexOfFirst { it.id == conversationId }
-        if (idx >= 0) recyclerView.scrollToPosition(idx)
+        if (idx >= 0) binding.recyclerConversations.scrollToPosition(idx)
     }
 
     private fun isNotificationServiceEnabled(): Boolean {

@@ -24,9 +24,28 @@ class WhatsAppListenerService : NotificationListenerService() {
             "com.whatsapp",
             "com.whatsapp.w4b"  // WhatsApp Business
         )
-        // Derive a stable conversation ID from the notification title (contact/group name)
-        fun makeConvId(pkg: String, title: String): String =
-            "${pkg}_${title.lowercase().replace(Regex("[^a-z0-9]"), "_")}"
+
+        /**
+         * Derive a stable conversation ID from the notification title (contact/group name).
+         *
+         * Strategy:
+         * 1. Try to use the OS-provided conversationId extra (most stable — survives renames).
+         * 2. Strip the title to only alphanumeric + digits, collapse runs of underscores.
+         *    Phone numbers like "+972-50-123-4567" become "972501234567" (still unique & readable).
+         */
+        fun makeConvId(pkg: String, title: String, osConvId: String? = null): String {
+            // Prefer the OS conversation ID if WhatsApp provides it
+            if (!osConvId.isNullOrBlank()) {
+                return "${pkg}_${osConvId}"
+            }
+            // Strip to alphanumeric only (keeps digits from phone numbers, drops separators)
+            val normalized = title
+                .replace(Regex("[^a-zA-Z0-9]"), "_")  // non-alphanumeric → underscore
+                .replace(Regex("_+"), "_")             // collapse consecutive underscores
+                .trim('_')                             // strip leading/trailing underscores
+                .lowercase()
+            return "${pkg}_${normalized.ifEmpty { "unknown" }}"
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -43,18 +62,34 @@ class WhatsAppListenerService : NotificationListenerService() {
         val messages = BundleCompat.getParcelableArray(extras, Notification.EXTRA_MESSAGES, Parcelable::class.java)
         val isGroup = extras.getBoolean("android.isGroupConversation", false)
 
-        val conversationId = makeConvId(sbn.packageName, title)
+        // Try to get WhatsApp's own stable conversation ID from the notification extras
+        val osConvId = extras.getString("android.conversationId")
+            ?: sbn.notification.shortcutId  // fallback: shortcut ID is also stable per chat
 
-        if (messages != null && messages.isNotEmpty()) {
-            // Multiple queued messages - send each one
+        val conversationId = makeConvId(sbn.packageName, title, osConvId)
+
+        if (!messages.isNullOrEmpty()) {
             for (parcelable in messages) {
                 val msgBundle = parcelable as? Bundle ?: continue
                 val sender = msgBundle.getCharSequence("sender")?.toString() ?: title
                 val msgText = msgBundle.getCharSequence("text")?.toString() ?: continue
                 val timestamp = msgBundle.getLong("time", System.currentTimeMillis()) / 1000
-                sendMessage(conversationId, title, sender, msgText, timestamp, isGroup)
+
+                // ✅ Use sender as the conversation key for bundles — NOT the outer `title`
+                // For groups, sender = individual person; for DMs, sender = contact name
+                // So for groups, we still need the outer title (which should be group name)
+                // Only fall back to title if it looks like a real name (not a number)
+                val convTitle = if (title.all { it.isDigit() || it in listOf('+', '-', ' ', '(', ')') }) {
+                    sender  // outer title is a number — use sender name instead
+                } else {
+                    title   // outer title is a real contact/group name — use it
+                }
+
+                val convId = makeConvId(sbn.packageName, convTitle, osConvId)
+                sendMessage(convId, convTitle, sender, msgText, timestamp, isGroup)
             }
-        } else {
+        }
+        else {
             // Single message — infer sender from "Name: message" pattern for groups
             val (sender, msgText) = if (isGroup && text.contains(": ")) {
                 val idx = text.indexOf(": ")

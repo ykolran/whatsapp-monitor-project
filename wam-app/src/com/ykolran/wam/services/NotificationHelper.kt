@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.ykolran.wam.R
 import com.ykolran.wam.ui.ConversationsActivity
 
@@ -59,6 +60,7 @@ object NotificationHelper {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
             .setContentTitle("$sentimentEmoji$contactName")
             .setContentText(summary)
             .setStyle(NotificationCompat.BigTextStyle().bigText(summary))

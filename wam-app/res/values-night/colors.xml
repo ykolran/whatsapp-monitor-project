@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary: Keep WhatsApp Teal but maybe slightly adjusted for dark -->
+    <color name="colorPrimary">#00A884</color>
+    <color name="colorPrimaryDark">#0B141A</color>
+    <color name="colorAccent">#00A884</color>
+
+    <!-- Surfaces in Dark Mode -->
+    <color name="colorBackground">#0B141A</color>
+    <color name="colorSurface">#111B21</color>
+    <color name="colorDivider">#232D33</color>
+
+    <!-- Text: Light on Dark -->
+    <color name="colorTextPrimary">#E9EDEF</color>
+    <color name="colorTextSecondary">#8696A0</color>
+    <color name="colorTextOnPrimary">#FFFFFF</color>
+
+    <!-- UI Elements -->
+    <color name="swipe_archive">#00A884</color>
+</resources>

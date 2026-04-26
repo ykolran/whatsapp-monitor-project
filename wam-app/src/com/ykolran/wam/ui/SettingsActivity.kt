@@ -5,6 +5,8 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.ykolran.wam.R
 import com.ykolran.wam.api.ApiClient
 import com.google.android.material.textfield.TextInputEditText
