@@ -90,18 +90,6 @@ router.post('/', (req, res) => {
     'SELECT * FROM conversations WHERE user_id = ? AND remote_id = ?'
   ).get(req.user.id, payload.conversationId);
 
-  // Check for duplicate message (same sender, timestamp, and conversation)
-  const sender = payload.sender || payload.contactName || 'Unknown';
-  const existingMsg = db.prepare(`
-    SELECT id FROM messages
-    WHERE conversation_id = ? AND sender = ? AND timestamp = ?
-  `).get(conv.id, sender, payload.timestamp);
-
-  if (existingMsg) {
-    // Duplicate found, skip insertion
-    return res.json({ success: true, messageId: existingMsg.id, conversationId: conv.id, isDuplicate: true });
-  }
-
   if (!conv) {
     const convId = uuidv4();
     db.prepare(`
@@ -117,6 +105,18 @@ router.post('/', (req, res) => {
       WHERE id = ?
     `).run(payload.contactName || conv.contact_name, conv.id);
     conv = db.prepare('SELECT * FROM conversations WHERE id = ?').get(conv.id);
+  }
+
+  // Check for duplicate message (same sender, timestamp, and conversation)
+  const sender = payload.sender || payload.contactName || 'Unknown';
+  const existingMsg = db.prepare(`
+    SELECT id FROM messages
+    WHERE conversation_id = ? AND sender = ? AND timestamp = ?
+  `).get(conv.id, sender, payload.timestamp);
+
+  if (existingMsg) {
+    // Duplicate found, skip insertion
+    return res.json({ success: true, messageId: existingMsg.id, conversationId: payload.conversationId, isDuplicate: true });
   }
 
   // Insert message synchronously — respond immediately
