@@ -55,6 +55,14 @@
     <string name="btn_save">Save</string>
     <string name="btn_test_connection">Test Connection</string>
 
+    <string name="action_resummarize">Re-summarize</string>
+    <string name="resummarizing">Re-summarizing…</string>
+    <string name="menu_delete_all">Delete all conversations</string>
+    <string name="delete_all_title">Delete all conversations?</string>
+    <string name="delete_all_message">This will permanently delete all conversations, messages, and summaries. This cannot be undone.</string>
+    <string name="delete_all_confirm">Delete</string>
+    <string name="delete_all_done">All conversations deleted</string>
+
     <plurals name="sample_count">
         <item quantity="one">%d photo enrolled</item>
         <item quantity="other">%d photos enrolled</item>

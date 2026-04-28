@@ -31,12 +31,6 @@ class ChildrenPhotosActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
-        ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
-            val statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            v.setPadding(0, statusBarHeight, 0, 0)
-            insets
-        }
-
         tvEmpty = findViewById(R.id.tvEmpty)
         recyclerView = findViewById(R.id.recyclerPhotos)
         recyclerView.layoutManager = GridLayoutManager(this, 2)

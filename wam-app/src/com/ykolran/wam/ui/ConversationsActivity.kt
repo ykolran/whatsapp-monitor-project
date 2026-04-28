@@ -6,17 +6,16 @@ import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
 import com.ykolran.wam.R
-import com.ykolran.wam.databinding.ActivityConversationsBinding
 import com.ykolran.wam.adapters.ConversationAdapter
 import com.ykolran.wam.api.ApiClient
+import com.ykolran.wam.databinding.ActivityConversationsBinding
 import com.ykolran.wam.models.Conversation
 import com.ykolran.wam.services.MediaWatcherService
 import com.ykolran.wam.services.NotificationHelper
@@ -34,14 +33,18 @@ class ConversationsActivity : AppCompatActivity() {
         binding = ActivityConversationsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
-
+        
         NotificationHelper.createChannel(this)
         ApiClient.loadFromPrefs(this)
 
         binding.swipeRefresh.setColorSchemeColors(getColor(R.color.colorPrimary))
         binding.swipeRefresh.setOnRefreshListener { loadConversations() }
 
-        adapter = ConversationAdapter(conversations, ::onConversationSwiped)
+        adapter = ConversationAdapter(
+            items        = conversations,
+            onSwipe      = ::onConversationSwiped,
+            onLongPress  = ::showConversationContextMenu
+        )
         binding.recyclerConversations.layoutManager = LinearLayoutManager(this)
         binding.recyclerConversations.adapter = adapter
         adapter.attachSwipeHelper(binding.recyclerConversations)
@@ -60,6 +63,89 @@ class ConversationsActivity : AppCompatActivity() {
 
         intent.getStringExtra("highlight_conversation_id")?.let { highlightConversation(it) }
     }
+
+    // ── Long-press context menu ───────────────────────────────────────────
+
+    private fun showConversationContextMenu(conversation: Conversation) {
+        AlertDialog.Builder(this)
+            .setTitle(conversation.contactName)
+            .setItems(arrayOf(getString(R.string.action_resummarize))) { _, which ->
+                when (which) {
+                    0 -> resummarizeConversation(conversation)
+                }
+            }
+            .show()
+    }
+
+    private fun resummarizeConversation(conversation: Conversation) {
+        // Show optimistic feedback immediately
+        val idx = conversations.indexOfFirst { it.id == conversation.id }
+        if (idx >= 0) {
+            conversations[idx] = conversations[idx].copy(summary = getString(R.string.resummarizing))
+            adapter.notifyItemChanged(idx)
+        }
+
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.api.resummarizeConversation(conversation.id)
+                }
+                if (!response.isSuccessful) {
+                    Toast.makeText(
+                        this@ConversationsActivity,
+                        getString(R.string.server_error, response.code()),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    loadConversations() // restore real state
+                }
+                // On success: server broadcasts summary_updated via WebSocket,
+                // which is handled by observeWebSocketUpdates() — no need to do anything else here
+            } catch (e: Exception) {
+                Toast.makeText(this@ConversationsActivity, e.message, Toast.LENGTH_SHORT).show()
+                loadConversations()
+            }
+        }
+    }
+
+    // ── Delete all conversations ──────────────────────────────────────────
+
+    private fun confirmDeleteAll() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.delete_all_title)
+            .setMessage(R.string.delete_all_message)
+            .setPositiveButton(R.string.delete_all_confirm) { _, _ -> deleteAllConversations() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun deleteAllConversations() {
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ApiClient.api.deleteAllConversations()
+                }
+                if (response.isSuccessful) {
+                    conversations.clear()
+                    adapter.notifyDataSetChanged()
+                    Toast.makeText(
+                        this@ConversationsActivity,
+                        R.string.delete_all_done,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        this@ConversationsActivity,
+                        getString(R.string.server_error, response.code()),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@ConversationsActivity, e.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // ── Load / WebSocket ──────────────────────────────────────────────────
 
     private fun loadConversations() {
         scope.launch {
@@ -92,7 +178,6 @@ class ConversationsActivity : AppCompatActivity() {
         scope.launch {
             ApiClient.summaryUpdates.collect { update ->
                 when (update.type) {
-
                     "summary_updated" -> {
                         val idx = conversations.indexOfFirst { it.id == update.conversationId }
                         if (idx >= 0) {
@@ -106,7 +191,6 @@ class ConversationsActivity : AppCompatActivity() {
                             // New conversation — reload the full list
                             loadConversations()
                         }
-
                         NotificationHelper.postSummaryNotification(
                             context        = this@ConversationsActivity,
                             contactName    = update.contactName,
@@ -115,7 +199,6 @@ class ConversationsActivity : AppCompatActivity() {
                             conversationId = update.conversationId
                         )
                     }
-
                     "conversation_archived" -> {
                         // Server confirmed archive — remove from list if still present.
                         // (Optimistic removal in onConversationSwiped already handled the UI;
@@ -185,6 +268,7 @@ class ConversationsActivity : AppCompatActivity() {
         R.id.action_settings        -> { startActivity(Intent(this, SettingsActivity::class.java)); true }
         R.id.action_enroll_face     -> { startActivity(Intent(this, FaceEnrollmentActivity::class.java)); true }
         R.id.action_children_photos -> { startActivity(Intent(this, ChildrenPhotosActivity::class.java)); true }
+        R.id.action_delete_all      -> { confirmDeleteAll(); true }
         else -> super.onOptionsItemSelected(item)
     }
 }
