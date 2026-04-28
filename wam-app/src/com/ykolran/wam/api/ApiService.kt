@@ -17,6 +17,12 @@ interface ApiService {
     @POST("api/conversations/{id}/swipe")
     suspend fun swipeConversation(@Path("id") conversationId: String): Response<SwipeResult>
 
+    @POST("api/conversations/{id}/resummarize")
+    suspend fun resummarizeConversation(@Path("id") conversationId: String): Response<Map<String, Any>>
+
+    @DELETE("api/conversations")
+    suspend fun deleteAllConversations(): Response<Map<String, Any>>
+
     @GET("api/messages/{conversationId}")
     suspend fun getMessages(@Path("conversationId") conversationId: String): Response<List<Message>>
 
@@ -37,11 +43,9 @@ interface ApiService {
         @Part("childName") childName: RequestBody
     ): Response<Map<String, Any>>
 
-    // NEW: list enrolled children (name + sample count)
     @GET("api/faces")
     suspend fun getEnrolledFaces(): Response<List<Map<String, Any>>>
 
-    // NEW: delete all enrolled faces for a child by name
     @DELETE("api/faces/{childName}")
     suspend fun deleteEnrolledFace(@Path("childName") childName: String): Response<Map<String, Any>>
 

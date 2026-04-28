@@ -16,7 +16,8 @@ import com.ykolran.wam.models.Conversation
 
 class ConversationAdapter(
     private val items: MutableList<Conversation>,
-    private val onSwipe: (Conversation, Int) -> Unit
+    private val onSwipe: (Conversation, Int) -> Unit,
+    private val onLongPress: (Conversation) -> Unit = {}
 ) : RecyclerView.Adapter<ConversationAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -68,6 +69,11 @@ class ConversationAdapter(
         holder.tvSentiment.text = sentimentEmoji(conv.sentiment)
         holder.tvBadge.visibility = if (conv.newMessageCount > 0) View.VISIBLE else View.GONE
         holder.tvBadge.text = conv.newMessageCount.toString()
+
+        holder.itemView.setOnLongClickListener {
+            onLongPress(conv)
+            true
+        }
     }
 
     private fun sentimentEmoji(sentiment: String?) = when (sentiment?.lowercase()) {
@@ -86,36 +92,25 @@ class ConversationAdapter(
     }
 
     private inner class SwipeCallback(private val context: Context)
-        : ItemTouchHelper.SimpleCallback(
-            0,
-            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT  // both directions
-        ) {
+        : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
 
-        private val bgColor  = ColorDrawable(ContextCompat.getColor(context, R.color.swipe_archive))
-        private val icon     = ContextCompat.getDrawable(context, R.drawable.ic_archive)!!
+        private val bgColor   = ColorDrawable(ContextCompat.getColor(context, R.color.swipe_archive))
+        private val icon      = ContextCompat.getDrawable(context, R.drawable.ic_archive)!!
         private val iconMargin = context.resources.getDimensionPixelSize(R.dimen.swipe_icon_margin)
         private val textPaint = Paint().apply {
-            color     = ContextCompat.getColor(context, android.R.color.white)
-            textSize  = context.resources.getDimensionPixelSize(R.dimen.swipe_label_size).toFloat()
+            color       = ContextCompat.getColor(context, android.R.color.white)
+            textSize    = context.resources.getDimensionPixelSize(R.dimen.swipe_label_size).toFloat()
             isAntiAlias = true
         }
 
-        override fun onMove(
-            rv: RecyclerView,
-            vh: RecyclerView.ViewHolder,
-            t: RecyclerView.ViewHolder
-        ) = false
+        override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
 
         override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
             val position = viewHolder.bindingAdapterPosition
             if (position == RecyclerView.NO_POSITION) return
-
-            // FIX: remove immediately so the green box disappears right away.
-            // The Activity will restore it if the server call fails.
             val conversation = items[position]
             items.removeAt(position)
             notifyItemRemoved(position)
-
             onSwipe(conversation, position)
         }
 
@@ -127,43 +122,38 @@ class ConversationAdapter(
             val label = context.getString(R.string.swipe_archive_label)
 
             when {
-                dX < 0 -> { // swiping LEFT
+                dX < 0 -> {
                     bgColor.setBounds(
                         (itemView.right + dX).toInt(), itemView.top,
                         itemView.right, itemView.bottom
                     )
                     bgColor.draw(c)
-
                     val iconTop   = itemView.top + (itemView.height - icon.intrinsicHeight) / 2
                     val iconRight = itemView.right - iconMargin
                     val iconLeft  = iconRight - icon.intrinsicWidth
                     icon.setBounds(iconLeft, iconTop, iconRight, iconTop + icon.intrinsicHeight)
                     icon.draw(c)
-
                     val textX = iconLeft.toFloat() - textPaint.measureText(label) - 8f
                     val textY = itemView.top + itemView.height / 2f + textPaint.textSize / 3f
                     if (textX > itemView.right + dX) c.drawText(label, textX, textY, textPaint)
                 }
-                dX > 0 -> { // swiping RIGHT
+                dX > 0 -> {
                     bgColor.setBounds(
                         itemView.left, itemView.top,
                         (itemView.left + dX).toInt(), itemView.bottom
                     )
                     bgColor.draw(c)
-
-                    val iconTop  = itemView.top + (itemView.height - icon.intrinsicHeight) / 2
-                    val iconLeft = itemView.left + iconMargin
+                    val iconTop   = itemView.top + (itemView.height - icon.intrinsicHeight) / 2
+                    val iconLeft  = itemView.left + iconMargin
                     val iconRight = iconLeft + icon.intrinsicWidth
                     icon.setBounds(iconLeft, iconTop, iconRight, iconTop + icon.intrinsicHeight)
                     icon.draw(c)
-
                     val textX = iconRight.toFloat() + 8f
                     val textY = itemView.top + itemView.height / 2f + textPaint.textSize / 3f
                     if (textX + textPaint.measureText(label) < itemView.left + dX)
                         c.drawText(label, textX, textY, textPaint)
                 }
             }
-
             super.onChildDraw(c, rv, vh, dX, dY, actionState, isActive)
         }
     }
