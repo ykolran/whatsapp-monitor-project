@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Red filled circle with X — no connection -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,2A10,10 0,0 1,22 12A10,10 0,0 1,12 22A10,10 0,0 1,2 12A10,10 0,0 1,12 2Z"/>
+    <!-- X mark -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E53935"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M8,8 L16,16 M16,8 L8,16"/>
+</vector>

@@ -19,6 +19,7 @@ import com.ykolran.wam.databinding.ActivityConversationsBinding
 import com.ykolran.wam.models.Conversation
 import com.ykolran.wam.services.MediaWatcherService
 import com.ykolran.wam.services.NotificationHelper
+import com.ykolran.wam.services.StatusBarService
 import kotlinx.coroutines.*
 
 class ConversationsActivity : AppCompatActivity() {
@@ -33,7 +34,7 @@ class ConversationsActivity : AppCompatActivity() {
         binding = ActivityConversationsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
-        
+
         NotificationHelper.createChannel(this)
         ApiClient.loadFromPrefs(this)
 
@@ -41,9 +42,9 @@ class ConversationsActivity : AppCompatActivity() {
         binding.swipeRefresh.setOnRefreshListener { loadConversations() }
 
         adapter = ConversationAdapter(
-            items        = conversations,
-            onSwipe      = ::onConversationSwiped,
-            onLongPress  = ::showConversationContextMenu
+            items       = conversations,
+            onSwipe     = ::onConversationSwiped,
+            onLongPress = ::showConversationContextMenu
         )
         binding.recyclerConversations.layoutManager = LinearLayoutManager(this)
         binding.recyclerConversations.adapter = adapter
@@ -57,6 +58,8 @@ class ConversationsActivity : AppCompatActivity() {
         }
 
         startService(Intent(this, MediaWatcherService::class.java))
+        StatusBarService.start(this)   // ← starts the persistent status bar icon
+
         ApiClient.connectWebSocket()
         loadConversations()
         observeWebSocketUpdates()
@@ -70,36 +73,28 @@ class ConversationsActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle(conversation.contactName)
             .setItems(arrayOf(getString(R.string.action_resummarize))) { _, which ->
-                when (which) {
-                    0 -> resummarizeConversation(conversation)
-                }
+                if (which == 0) resummarizeConversation(conversation)
             }
             .show()
     }
 
     private fun resummarizeConversation(conversation: Conversation) {
-        // Show optimistic feedback immediately
         val idx = conversations.indexOfFirst { it.id == conversation.id }
         if (idx >= 0) {
             conversations[idx] = conversations[idx].copy(summary = getString(R.string.resummarizing))
             adapter.notifyItemChanged(idx)
         }
-
         scope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
                     ApiClient.api.resummarizeConversation(conversation.id)
                 }
                 if (!response.isSuccessful) {
-                    Toast.makeText(
-                        this@ConversationsActivity,
-                        getString(R.string.server_error, response.code()),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    loadConversations() // restore real state
+                    Toast.makeText(this@ConversationsActivity,
+                        getString(R.string.server_error, response.code()), Toast.LENGTH_SHORT).show()
+                    loadConversations()
                 }
-                // On success: server broadcasts summary_updated via WebSocket,
-                // which is handled by observeWebSocketUpdates() — no need to do anything else here
+                // Success: WebSocket summary_updated arrives → updates UI + StatusBarService
             } catch (e: Exception) {
                 Toast.makeText(this@ConversationsActivity, e.message, Toast.LENGTH_SHORT).show()
                 loadConversations()
@@ -107,7 +102,7 @@ class ConversationsActivity : AppCompatActivity() {
         }
     }
 
-    // ── Delete all conversations ──────────────────────────────────────────
+    // ── Delete all ────────────────────────────────────────────────────────
 
     private fun confirmDeleteAll() {
         AlertDialog.Builder(this)
@@ -121,23 +116,14 @@ class ConversationsActivity : AppCompatActivity() {
     private fun deleteAllConversations() {
         scope.launch {
             try {
-                val response = withContext(Dispatchers.IO) {
-                    ApiClient.api.deleteAllConversations()
-                }
+                val response = withContext(Dispatchers.IO) { ApiClient.api.deleteAllConversations() }
                 if (response.isSuccessful) {
                     conversations.clear()
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(
-                        this@ConversationsActivity,
-                        R.string.delete_all_done,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this@ConversationsActivity, R.string.delete_all_done, Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(
-                        this@ConversationsActivity,
-                        getString(R.string.server_error, response.code()),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this@ConversationsActivity,
+                        getString(R.string.server_error, response.code()), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@ConversationsActivity, e.message, Toast.LENGTH_SHORT).show()
@@ -156,18 +142,12 @@ class ConversationsActivity : AppCompatActivity() {
                     conversations.addAll(response.body() ?: emptyList())
                     adapter.notifyDataSetChanged()
                 } else {
-                    Toast.makeText(
-                        this@ConversationsActivity,
-                        getString(R.string.server_error, response.code()),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this@ConversationsActivity,
+                        getString(R.string.server_error, response.code()), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(
-                    this@ConversationsActivity,
-                    getString(R.string.cannot_connect_server),
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(this@ConversationsActivity,
+                    getString(R.string.cannot_connect_server), Toast.LENGTH_LONG).show()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
             }
@@ -179,30 +159,19 @@ class ConversationsActivity : AppCompatActivity() {
             ApiClient.summaryUpdates.collect { update ->
                 when (update.type) {
                     "summary_updated" -> {
+                        // Update the in-app list only; StatusBarService handles the notification
                         val idx = conversations.indexOfFirst { it.id == update.conversationId }
                         if (idx >= 0) {
-                            // Update existing conversation's summary in-place
                             conversations[idx] = conversations[idx].copy(
                                 summary   = update.summary,
                                 sentiment = update.sentiment
                             )
                             adapter.notifyItemChanged(idx)
                         } else {
-                            // New conversation — reload the full list
                             loadConversations()
                         }
-                        NotificationHelper.postSummaryNotification(
-                            context        = this@ConversationsActivity,
-                            contactName    = update.contactName,
-                            summary        = update.summary,
-                            sentiment      = update.sentiment,
-                            conversationId = update.conversationId
-                        )
                     }
                     "conversation_archived" -> {
-                        // Server confirmed archive — remove from list if still present.
-                        // (Optimistic removal in onConversationSwiped already handled the UI;
-                        //  this covers the case where a WS push arrives from another device.)
                         val idx = conversations.indexOfFirst { it.id == update.conversationId }
                         if (idx >= 0) {
                             conversations.removeAt(idx)
@@ -215,22 +184,16 @@ class ConversationsActivity : AppCompatActivity() {
     }
 
     private fun onConversationSwiped(conversation: Conversation, position: Int) {
-        // Optimistic removal already done in ConversationAdapter.onSwiped()
         scope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
                     ApiClient.api.swipeConversation(conversation.id)
                 }
                 if (!response.isSuccessful) {
-                    // Server rejected — restore the item
                     adapter.restoreItem(conversation, position)
-                    Toast.makeText(
-                        this@ConversationsActivity,
-                        getString(R.string.swipe_failed),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this@ConversationsActivity,
+                        getString(R.string.swipe_failed), Toast.LENGTH_SHORT).show()
                 }
-                // On success: item is already gone, WS broadcast is ignored (idx == -1)
             } catch (e: Exception) {
                 adapter.restoreItem(conversation, position)
                 Toast.makeText(this@ConversationsActivity, e.message, Toast.LENGTH_SHORT).show()

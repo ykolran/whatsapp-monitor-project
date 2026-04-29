@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="statusConnected">#00897B</color>
+    <color name="statusDisconnected">#E53935</color>
     <!-- Primary: Keep WhatsApp Teal but maybe slightly adjusted for dark -->
     <color name="colorPrimary">#00A884</color>
     <color name="colorPrimaryDark">#0B141A</color>

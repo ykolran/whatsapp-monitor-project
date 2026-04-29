@@ -63,6 +63,10 @@
     <string name="delete_all_confirm">Delete</string>
     <string name="delete_all_done">All conversations deleted</string>
 
+    <string name="status_connected">WAM — Connected</string>
+    <string name="status_no_connection">WAM — No server connection</string>
+    <string name="status_unread_summaries">WAM — %d unread summaries</string>
+    <string name="action_mark_all_read">Mark all read</string>
     <plurals name="sample_count">
         <item quantity="one">%d photo enrolled</item>
         <item quantity="other">%d photos enrolled</item>
